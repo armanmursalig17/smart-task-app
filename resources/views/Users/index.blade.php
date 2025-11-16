@@ -11,7 +11,7 @@
 
             <div class="p-6  bg-white border-b border-gray-200">
                 <div class="text-2xl font-bold mb-4">
-                    Daftar Pengguna
+                    Daftar Users 
                 </div>
 
               
