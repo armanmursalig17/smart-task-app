@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* resources/css/app.css atau file CSS kustom Anda */
+
+@keyframes gold-pulse {
+  0%, 100% {
+    /* Warna emas yang sedikit pudar atau warna teks normal */
+    color: #f7e096; /* Emas Muda */
+    text-shadow: 0 0 5px rgba(247, 224, 150, 0); /* Tidak ada shadow */
+  }
+  50% {
+    /* Warna emas paling terang dengan bayangan (efek menyala) */
+    color: #e8e8e8; /* Emas Penuh */
+    text-shadow: 0 0 10px #0f0064, 0 0 20px #d6d6d6; /* Bayangan emas */
+  }
+}
+
+.animate-gold-pulse {
+  animation: gold-pulse 10s infinite alternate; /* Animasi berulang, 2 detik, bolak-balik */
+}
