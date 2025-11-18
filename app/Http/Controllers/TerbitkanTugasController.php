@@ -22,21 +22,19 @@ class TerbitkanTugasController extends Controller
     {
         $userId = Auth::id();
 
-        // 1. Ambil tugas dengan status 'aktif' (untuk tabel utama)
+       
         $terbitanAktif = TerbitanTugas::where('user_id', $userId)
             ->where('status', 'aktif')
             ->with(['kelas', 'tugas'])
             ->latest()
-            ->paginate(10, ['*'], 'aktifPage'); // Gunakan nama page yang berbeda
-
-        // 2. Ambil tugas dengan status 'ditutup' (untuk riwayat tersembunyi)
+            ->paginate(10, ['*'], 'aktifPage'); 
+      
         $terbitanDitutup = TerbitanTugas::where('user_id', $userId)
             ->where('status', 'ditutup')
             ->with(['kelas', 'tugas'])
             ->latest()
-            ->get(); // Tidak perlu pagination di sini jika data ditutup tidak terlalu banyak
+            ->get(); 
 
-        // Kirim kedua koleksi ke view
         return view('terbitkantugas.index', compact('terbitanAktif', 'terbitanDitutup'));
     }
 
@@ -48,16 +46,16 @@ class TerbitkanTugasController extends Controller
 
         $kelas = Kelas::where('user_id', Auth::id())->get();
 
-        // 1. Ambil ID tugas yang sudah diterbitkan oleh user yang sedang login.
+       
         $tugasSudahTerbitIds = TerbitanTugas::where('user_id', Auth::id())
             ->pluck('tugas_id')
             ->toArray();
 
-        // 2. Ambil semua tugas milik kelas user ini, KECUALI yang sudah diterbitkan.
+        
         $tugas = Tugas::whereHas('kelas', function ($query) {
             $query->where('user_id', Auth::id());
         })
-            ->whereNotIn('id', $tugasSudahTerbitIds) // <-- Tambahan: Filter tugas yang sudah diterbitkan
+            ->whereNotIn('id', $tugasSudahTerbitIds) 
             ->get();
 
         return view('terbitkantugas.create', compact('kelas', 'tugas'));
@@ -263,82 +261,73 @@ class TerbitkanTugasController extends Controller
         $jawabanSiswaJson = $jawabanSiswa->jawaban_json ?? [];
         $totalSoal = $soals->count();
 
-        // Persiapkan data untuk ditampilkan
+       
         $dataJawaban = $soals->map(function ($soal, $index) use ($jawabanSiswaJson) {
             
-            // 1. MENGAMBIL JAWABAN SISWA (pastikan akses key Soal ID adalah string)
+           
             $siswaJawabRAW = $jawabanSiswaJson[(string)$soal->id] ?? null;
 
-            // 2. MENGAMBIL KUNCI JAWABAN (ID Opsi yang benar/Index Opsi)
+         
             $jawabanBenarRAW = $soal->kunci_jawaban ?? null;
 
             $isBenar = null;
 
-            // 3. MEMBUAT MAP OPSI (ID Opsi ke Teks, dan Opsi ID dijamin string)
+           
             $opsiTampilan = $soal->opsiJawabans->map(function ($opsi) {
                 return [
-                    'id' => (string)$opsi->id, // <-- ID Opsi dijamin string
+                    'id' => (string)$opsi->id, 
                     'teks' => $opsi->opsi_teks,
                     'gambar' => $opsi->opsi_gambar,
                 ];
             })->values();
 
-            // 4. MEMBUAT MAP ID OPSI ke HURUF A/B/C dan INDEX OPSI ke ID OPSI
-            $opsiHurufMap = []; // [ID Opsi (string) => Huruf]
-            $opsiIdByIndex = []; // [Index (integer) => ID Opsi (string)]
-
+          
+            $opsiHurufMap = []; 
+            $opsiIdByIndex = []; 
             foreach ($opsiTampilan as $i => $opsi) {
                 $opsiHurufMap[$opsi['id']] = chr(65 + $i);
                 $opsiIdByIndex[$i] = $opsi['id'];
             }
 
-            
-            // =========================================================================
-            // 5. NORMALISASI JAWABAN: Menentukan ID Opsi yang BENAR dari RAW Value (ID/Index)
-            // =========================================================================
-
+          
             $normalizedSiswaID = null;
             $normalizedBenarID = null;
             
-            // --- Normalisasi Jawaban Siswa ---
+           
             if ($siswaJawabRAW !== null) {
                 $rawSiswaString = (string)$siswaJawabRAW;
                 
-                // Coba lookup sebagai ID Opsi
+               
                 if (isset($opsiHurufMap[$rawSiswaString])) {
                     $normalizedSiswaID = $rawSiswaString; 
                 } 
-                // Jika gagal, coba lookup sebagai Index Opsi (karena rawSiswa adalah '0', '1', '2'...)
+               
                 elseif (is_numeric($rawSiswaString) && isset($opsiIdByIndex[(int)$rawSiswaString])) {
                     $normalizedSiswaID = $opsiIdByIndex[(int)$rawSiswaString];
                 }
             }
 
-            // --- Normalisasi Kunci Jawaban ---
+          
             if ($jawabanBenarRAW !== null) {
                 $rawBenarString = (string)$jawabanBenarRAW;
                 
-                // Coba lookup sebagai ID Opsi
+                
                 if (isset($opsiHurufMap[$rawBenarString])) {
                     $normalizedBenarID = $rawBenarString; 
                 }
-                // Jika gagal, coba lookup sebagai Index Opsi
+               
                 elseif (is_numeric($rawBenarString) && isset($opsiIdByIndex[(int)$rawBenarString])) {
                     $normalizedBenarID = $opsiIdByIndex[(int)$rawBenarString];
                 }
             }
-            
-            // =========================================================================
-            // 6. HITUNG HASIL
-            // =========================================================================
-
+       
             $jawabanSiswaHuruf = $normalizedSiswaID ? $opsiHurufMap[$normalizedSiswaID] : null;
             $jawabanBenarHuruf = $normalizedBenarID ? $opsiHurufMap[$normalizedBenarID] : null;
 
             if ($normalizedSiswaID === null) {
-                $isBenar = null; // Belum menjawab
+                $isBenar = null; 
             } else {
-                // PENENTUAN BENAR/SALAH: Perbandingan dilakukan antara ID Opsi yang sudah dinormalisasi
+               
                 $isBenar = $normalizedSiswaID === $normalizedBenarID;
             }
 
@@ -352,12 +341,12 @@ class TerbitkanTugasController extends Controller
                 'opsi_tampilan' => collect($opsiTampilan)->keyBy(fn($o) => $o['id'])->toArray(),
 
 
-                // === Output ke View ===
+               
                 'jawaban_siswa_huruf' => $jawabanSiswaHuruf,
                 'jawaban_benar_huruf' => $jawabanBenarHuruf,
 
-                'jawaban_siswa' => $siswaJawabRAW, // Mengirim RAW Value (hanya untuk debugging)
-                'jawaban_benar' => $jawabanBenarRAW, // Mengirim RAW Value (hanya untuk debugging)
+                'jawaban_siswa' => $siswaJawabRAW, 
+                'jawaban_benar' => $jawabanBenarRAW, 
 
                 'is_benar' => $isBenar,
             ];
