@@ -127,9 +127,9 @@
                             <button type="submit" name="action"
                                 value="{{ $soalIndex < $totalSoal ? 'next' : 'finish' }}"
                                 class="px-8 py-3 
-                {{ $soalIndex < $totalSoal ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-green-600 hover:bg-green-700' }} 
-                text-white rounded-lg font-semibold transition-colors">
-                                {{ $soalIndex < $totalSoal ? 'Simpan & Selanjutnya &rarr;' : 'Selesai & Kumpulkan Jawaban' }}
+                                {{ $soalIndex < $totalSoal ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-green-600 hover:bg-green-700' }} 
+                                text-white rounded-lg font-semibold transition-colors">
+                                {{ $soalIndex < $totalSoal ? 'Selanjutnya' : 'Selesai & Kumpulkan Jawaban' }}
                             </button>
                         </div>
                     </form>

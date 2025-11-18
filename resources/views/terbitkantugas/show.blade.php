@@ -77,6 +77,10 @@
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Waktu Dikerjakan
                                         </th>
+                                        <th
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Aksi
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -167,6 +171,14 @@
                                                     ...
                                                 @endif
                                             </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <a
+                                                    href="{{ route('terbitkantugas.showJawabanSiswa', ['terbitanId' => $terbitan->id, 'jawabanId' => $jawaban->id]) }}"
+                                                    
+                                                    class="text-indigo-600 hover:text-indigo-900 inline-flex items-center">
+                                                    Lihat Jawaban
+                                                    </a>
+                                                </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('opsi_jawabans', function (Blueprint $table) {
-            // 1. Tambah kolom 'tipe_opsi' untuk (teks/gambar)
+           
             $table->enum('tipe_opsi', ['teks', 'gambar'])->default('teks')->after('soal_id');
             
-            // 2. Tambah kolom 'opsi_gambar' untuk path file
+         
             $table->string('opsi_gambar')->nullable()->after('opsi_teks');
             
-            // 3. Ubah 'opsi_teks' agar boleh null (jika tipenya gambar)
+         
             $table->text('opsi_teks')->nullable()->change();
         });
     }

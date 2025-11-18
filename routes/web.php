@@ -109,7 +109,9 @@ Route::middleware('auth')->group(function () {
     Route::get('terbitkantugas/{terbitan_tugas}/nilai', [TerbitkanTugasController::class, 'showNilai'])->name('terbitkantugas.showNilai');
     Route::get('terbitkantugas/{terbitan_tugas}/export/nilai', [TerbitkanTugasController::class, 'exportNilai'])->name('terbitkantugas.exportNilai');
     Route::post('/terbitkantugas/{id}/deactivate', [TerbitkanTugasController::class, 'deactivate'])->name('terbitkantugas.deactivate');
-
+    
+    Route::get('/terbitkantugas/{terbitanId}/jawaban/{jawabanId}', [TerbitkanTugasController::class, 'showJawabanSiswa'])
+        ->name('terbitkantugas.showJawabanSiswa');
 
     Route::get('/users', [UsersController::class, 'index'])->name('users.index');
     Route::put('/users/{user}/reset-password', [UsersController::class, 'resetPassword'])->name('users.reset-password');

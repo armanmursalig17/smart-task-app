@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Kelas;
 use App\Models\Tugas;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
+use App\Models\JawabanSiswa;
 
+use Illuminate\Http\Request;
 use App\Models\TerbitanTugas;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -119,7 +120,7 @@ class TerbitkanTugasController extends Controller
     {
         $terbitan = TerbitanTugas::where('id', $id)
             ->where('user_id', Auth::id())
-            ->where('status', 'aktif') 
+            ->where('status', 'aktif')
             ->firstOrFail();
 
         $terbitan->update(['status' => 'ditutup']);
@@ -243,5 +244,126 @@ class TerbitkanTugasController extends Controller
         };
 
         return Response::streamDownload($callback, $filename, $headers);
+    }
+
+ public function showJawabanSiswa(string $terbitanId, string $jawabanId)
+    {
+
+        $terbitan = TerbitanTugas::where('id', $terbitanId)
+            ->where('user_id', Auth::id())
+            ->with(['tugas.soals.opsiJawabans'])
+            ->firstOrFail();
+
+
+        $jawabanSiswa = JawabanSiswa::where('id', $jawabanId)
+            ->where('terbitan_tugas_id', $terbitanId)
+            ->firstOrFail();
+
+        $soals = $terbitan->tugas->soals;
+        $jawabanSiswaJson = $jawabanSiswa->jawaban_json ?? [];
+        $totalSoal = $soals->count();
+
+        // Persiapkan data untuk ditampilkan
+        $dataJawaban = $soals->map(function ($soal, $index) use ($jawabanSiswaJson) {
+            
+            // 1. MENGAMBIL JAWABAN SISWA (pastikan akses key Soal ID adalah string)
+            $siswaJawabRAW = $jawabanSiswaJson[(string)$soal->id] ?? null;
+
+            // 2. MENGAMBIL KUNCI JAWABAN (ID Opsi yang benar/Index Opsi)
+            $jawabanBenarRAW = $soal->kunci_jawaban ?? null;
+
+            $isBenar = null;
+
+            // 3. MEMBUAT MAP OPSI (ID Opsi ke Teks, dan Opsi ID dijamin string)
+            $opsiTampilan = $soal->opsiJawabans->map(function ($opsi) {
+                return [
+                    'id' => (string)$opsi->id, // <-- ID Opsi dijamin string
+                    'teks' => $opsi->opsi_teks,
+                    'gambar' => $opsi->opsi_gambar,
+                ];
+            })->values();
+
+            // 4. MEMBUAT MAP ID OPSI ke HURUF A/B/C dan INDEX OPSI ke ID OPSI
+            $opsiHurufMap = []; // [ID Opsi (string) => Huruf]
+            $opsiIdByIndex = []; // [Index (integer) => ID Opsi (string)]
+
+            foreach ($opsiTampilan as $i => $opsi) {
+                $opsiHurufMap[$opsi['id']] = chr(65 + $i);
+                $opsiIdByIndex[$i] = $opsi['id'];
+            }
+
+            
+            // =========================================================================
+            // 5. NORMALISASI JAWABAN: Menentukan ID Opsi yang BENAR dari RAW Value (ID/Index)
+            // =========================================================================
+
+            $normalizedSiswaID = null;
+            $normalizedBenarID = null;
+            
+            // --- Normalisasi Jawaban Siswa ---
+            if ($siswaJawabRAW !== null) {
+                $rawSiswaString = (string)$siswaJawabRAW;
+                
+                // Coba lookup sebagai ID Opsi
+                if (isset($opsiHurufMap[$rawSiswaString])) {
+                    $normalizedSiswaID = $rawSiswaString; 
+                } 
+                // Jika gagal, coba lookup sebagai Index Opsi (karena rawSiswa adalah '0', '1', '2'...)
+                elseif (is_numeric($rawSiswaString) && isset($opsiIdByIndex[(int)$rawSiswaString])) {
+                    $normalizedSiswaID = $opsiIdByIndex[(int)$rawSiswaString];
+                }
+            }
+
+            // --- Normalisasi Kunci Jawaban ---
+            if ($jawabanBenarRAW !== null) {
+                $rawBenarString = (string)$jawabanBenarRAW;
+                
+                // Coba lookup sebagai ID Opsi
+                if (isset($opsiHurufMap[$rawBenarString])) {
+                    $normalizedBenarID = $rawBenarString; 
+                }
+                // Jika gagal, coba lookup sebagai Index Opsi
+                elseif (is_numeric($rawBenarString) && isset($opsiIdByIndex[(int)$rawBenarString])) {
+                    $normalizedBenarID = $opsiIdByIndex[(int)$rawBenarString];
+                }
+            }
+            
+            // =========================================================================
+            // 6. HITUNG HASIL
+            // =========================================================================
+
+            $jawabanSiswaHuruf = $normalizedSiswaID ? $opsiHurufMap[$normalizedSiswaID] : null;
+            $jawabanBenarHuruf = $normalizedBenarID ? $opsiHurufMap[$normalizedBenarID] : null;
+
+            if ($normalizedSiswaID === null) {
+                $isBenar = null; // Belum menjawab
+            } else {
+                // PENENTUAN BENAR/SALAH: Perbandingan dilakukan antara ID Opsi yang sudah dinormalisasi
+                $isBenar = $normalizedSiswaID === $normalizedBenarID;
+            }
+
+
+            return [
+                'nomor' => $index + 1,
+                'id' => $soal->id,
+                'soal_teks' => $soal->pertanyaan,
+                'gambar_soal' => $soal->gambar_soal,
+                'tipe_soal' => $soal->tipe_soal_di_tugas,
+                'opsi_tampilan' => collect($opsiTampilan)->keyBy(fn($o) => $o['id'])->toArray(),
+
+
+                // === Output ke View ===
+                'jawaban_siswa_huruf' => $jawabanSiswaHuruf,
+                'jawaban_benar_huruf' => $jawabanBenarHuruf,
+
+                'jawaban_siswa' => $siswaJawabRAW, // Mengirim RAW Value (hanya untuk debugging)
+                'jawaban_benar' => $jawabanBenarRAW, // Mengirim RAW Value (hanya untuk debugging)
+
+                'is_benar' => $isBenar,
+            ];
+        });
+
+
+        return view('terbitkantugas.show-jawaban', compact('terbitan', 'jawabanSiswa', 'dataJawaban', 'totalSoal'));
     }
 }

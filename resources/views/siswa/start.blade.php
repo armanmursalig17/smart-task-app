@@ -29,7 +29,7 @@
             <div class="mb-6">                 <label for="student_name"
                     class="block text-sm font-medium text-gray-700 mb-2">Masukkan Nama Lengkap Anda</label>
                 <input type="text" name="student_name" id="student_name" required
-                    placeholder="Cth: Budi Santoso (Wajib diisi)"
+                    placeholder="Cth: Wahyu Katili (Wajib diisi)"
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-green-500 shadow-sm">
                 @error('student_name')
                     <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
